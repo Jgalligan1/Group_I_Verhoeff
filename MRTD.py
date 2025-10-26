@@ -60,6 +60,10 @@ def encode_mrz(fields: dict) -> tuple[str, str]:
     ).replace(" ", "<")
     return line1[:44], line2[:44]
 
+def query_travel_document_from_db(document_id):
+    """Stub for querying travel document fields from a database."""
+    pass  # No implementation needed for now
+
 #Requirement 4 wants us to report mismatchs
 _d_table = [
     [0,1,2,3,4,5,6,7,8,9],
@@ -104,3 +108,15 @@ def verify_field_with_verhoeff(field: str, check_digit: str) -> bool:
     """
     expected = verhoeff_check_digit(field)
     return str(expected) == check_digit
+
+def report_check_digit_mismatches(decoded_fields: dict) -> list[str]:
+    mismatches = []
+    if not verify_field_with_verhoeff(decoded_fields['passport_number'], decoded_fields['passport_check_digit']):
+        mismatches.append('passport_number')
+    if not verify_field_with_verhoeff(decoded_fields['birth_date'], decoded_fields['birth_check_digit']):
+        mismatches.append('birth_date')
+    if not verify_field_with_verhoeff(decoded_fields['expiration_date'], decoded_fields['expiration_check_digit']):
+        mismatches.append('expiration_date')
+    if not verify_field_with_verhoeff(decoded_fields['personal_number'], decoded_fields['personal_check_digit']):
+        mismatches.append('personal_number')
+    return mismatches
