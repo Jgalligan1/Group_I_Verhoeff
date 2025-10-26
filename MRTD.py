@@ -4,7 +4,7 @@
 def scan_mrz_from_hardware():
     pass
 
-#Requirement 2 wants a
+#Requirement 2 wants to be able to decode 2 strings for all the relevant information
 
 def decode_mrz(line1: str, line2: str) -> dict:
     if len(line1) != 44 or len(line2) != 44:
@@ -49,3 +49,58 @@ def decode_mrz(line1: str, line2: str) -> dict:
         "final_check_digit": final_check
     }
 
+#Requirement 3 wants to be able to encode information into two strings.
+def encode_mrz(fields: dict) -> tuple[str, str]:
+    line1 = f"{fields['type']}<{fields['country']}{fields['name']:<39}".replace(" ", "<")
+    line2 = (
+        f"{fields['passport_number']}{fields['passport_check']}"
+        f"{fields['nationality']}{fields['birth_date']}{fields['birth_check']}"
+        f"{fields['sex']}{fields['expiration_date']}{fields['expiration_check']}"
+        f"{fields['personal_number']:<14}{fields['final_check']}"
+    ).replace(" ", "<")
+    return line1[:44], line2[:44]
+
+#Requirement 4 wants us to report mismatchs
+_d_table = [
+    [0,1,2,3,4,5,6,7,8,9],
+    [1,2,3,4,0,6,7,8,9,5],
+    [2,3,4,0,1,7,8,9,5,6],
+    [3,4,0,1,2,8,9,5,6,7],
+    [4,0,1,2,3,9,5,6,7,8],
+    [5,9,8,7,6,0,4,3,2,1],
+    [6,5,9,8,7,1,0,4,3,2],
+    [7,6,5,9,8,2,1,0,4,3],
+    [8,7,6,5,9,3,2,1,0,4],
+    [9,8,7,6,5,4,3,2,1,0]
+]
+
+_p_table = [
+    [0,1,2,3,4,5,6,7,8,9],
+    [1,5,7,6,2,8,3,0,9,4],
+    [5,8,0,3,7,9,6,1,4,2],
+    [8,9,1,6,0,4,3,5,2,7],
+    [9,4,5,3,1,2,6,8,7,0],
+    [4,2,8,6,5,7,3,9,0,1],
+    [2,7,9,3,8,0,6,4,1,5],
+    [7,0,4,6,9,1,3,2,5,8]
+]
+
+_inv_table = [0,4,3,2,1,5,6,7,8,9]
+
+def verhoeff_check_digit(number: str) -> int:
+    """
+    Computes Verhoeff check digit for a numeric string.
+    """
+    c = 0
+    reversed_digits = map(int, reversed(number))
+    for i, item in enumerate(reversed_digits):
+        c = _d_table[c][_p_table[(i + 1) % 8][item]]
+    return _inv_table[c]
+
+
+def verify_field_with_verhoeff(field: str, check_digit: str) -> bool:
+    """
+    Verifies that field matches its Verhoeff check digit.
+    """
+    expected = verhoeff_check_digit(field)
+    return str(expected) == check_digit
