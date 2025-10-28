@@ -1,393 +1,278 @@
 # MRTD (Machine Readable Travel Document) Parser with Verhoeff Check Digit Validation
 
-**Authors:** Jack Galligan, Zhuo Zhang, and Vanshaj Tyagi
+Authors: Jack Galligan, Zhuo Zhang, Vanshaj Tyagi
 
-A Python library for parsing, encoding, and validating Machine Readable Travel Documents (MRTD) using the Verhoeff check digit algorithm as specified in ICAO Doc 9303.
+Repository URL
+- https://github.com/jgalligan1/Group_I_Verhoeff
+
+Important: Use Python 3.7
+- Install Python 3.7.x from: https://www.python.org/downloads/release/python-379/
+- The grading environment targets Python 3.7.
+
+Note about requirements.txt
+- requirements.txt lists modern packages that may not install on Python 3.7.
+- For grading on Python 3.7, install only:
+  - pip install coverage==5.5 MutPy==0.6.1
+- For a newer Python (e.g., 3.10+), you can use:
+  - pip install -r requirements.txt
 
 ---
 
 ## Table of Contents
-
-- [Overview](#overview)
-- [Features](#features)
-- [Installation](#installation)
-- [Usage](#usage)
-  - [Decoding MRZ](#decoding-mrz)
-  - [Encoding MRZ](#encoding-mrz)
-  - [Verhoeff Check Digit Validation](#verhoeff-check-digit-validation)
-- [Testing](#testing)
-- [Code Coverage](#code-coverage)
-- [Project Structure](#project-structure)
-- [Requirements](#requirements)
-- [API Reference](#api-reference)
-- [Examples](#examples)
-- [Contributing](#contributing)
-- [License](#license)
+- Overview
+- Features
+- Installation (Windows, Python 3.7)
+- Usage
+  - Decoding MRZ
+  - Encoding MRZ
+  - Verhoeff validation and mismatch reporting
+- Testing (without MutPy)
+- Code Coverage (without MutPy)
+- Mutation Testing (with MutPy)
+- Project Structure
+- Requirements
+- API Reference (MRTD.py)
+- About the Tests (MRTDtest.py)
+- Additional Tests Added (MutPy-driven)
+- How to Export the PDF Report
+- Troubleshooting
+- Contributing
+- License
 
 ---
 
 ## Overview
-
-This project implements a complete MRTD (passport) MRZ (Machine Readable Zone) parser with Verhoeff check digit validation. It supports:
-
-- Decoding 2-line MRZ data from passports
-- Encoding travel document information into MRZ format
-- Validating check digits using the Verhoeff algorithm
-- Reporting mismatches in check digit validation
-
-The implementation follows the ICAO Doc 9303 specifications for travel document standards.
-
----
+This project parses and generates TD3-format MRZ (2 lines x 44 characters), validates fields using the Verhoeff check digit algorithm, and reports mismatches. It includes stubs for scanning hardware and a database so tests can use mocks.
 
 ## Features
-
-✅ **MRZ Decoding**: Parse 44-character MRZ lines into structured data  
-✅ **MRZ Encoding**: Convert structured data into ICAO-compliant MRZ format  
-✅ **Verhoeff Check Digits**: Compute and verify check digits using the Verhoeff algorithm  
-✅ **Mismatch Reporting**: Identify fields with incorrect check digits  
-✅ **Multi-country Support**: Tested with USA, GBR, CAN, DEU, FRA passports  
-✅ **Comprehensive Testing**: >80% code coverage with extensive test suite  
-✅ **Type Hints**: Full type annotations for better IDE support
+- MRZ decoding to structured fields (TD3 format)
+- MRZ encoding from fields to two 44-character lines
+- Verhoeff check digit computation and verification
+- Report mismatches for passport number, birth date, expiration date, and personal number
+- Hardware scan and DB query stubs (mockable in tests)
+- Comprehensive unit tests targeting >80% coverage
 
 ---
 
-## Installation
+## Installation (Windows, Python 3.7)
+1) Verify Python 3.7:
+- python --version  (expect 3.7.x)
 
-1. **Clone the repository:**
-```bash
-git clone <repository-url>
-cd Group_I_Verhoeff
-```
+2) Create and activate a venv:
+- python -m venv .venv
+- .venv\Scripts\activate
 
-2. **Install dependencies:**
-```bash
-pip install -r requirements.txt
-```
+3) Install minimal grading deps (recommended):
+- pip install coverage==5.5 MutPy==0.6.1
 
-3. **Verify installation:**
-```bash
-python -m unittest MRTDtest.py
-```
+Optionally (newer Python only):
+- pip install -r requirements.txt
 
 ---
 
 ## Usage
 
 ### Decoding MRZ
-
 ```python
 from MRTD import decode_mrz
 
-# Example MRZ lines from a US passport
-line1 = "P<USASMITH<<JOHN<JAMES<<<<<<<<<<<<<<<<<<"
-line2 = "1234567890USA9001011M25050151234567890<<8"
+line1 = "P<USASMITH<<JOHN<JAMES<<<<<<<<<<<<<<<<<<<"
+line2 = "1234567890USA9001011M2505015<<<<<<<<<<<08"
 
-# Decode the MRZ
 result = decode_mrz(line1, line2)
-
-print(f"Name: {result['given_names']} {result['surname']}")
-print(f"Passport Number: {result['passport_number']}")
-print(f"Nationality: {result['nationality']}")
-print(f"Birth Date: {result['birth_date']}")
-print(f"Expiration Date: {result['expiration_date']}")
-```
-
-**Output:**
-```
-Name: JOHN JAMES SMITH
-Passport Number: 123456789
-Nationality: USA
-Birth Date: 900101
-Expiration Date: 250501
+print(result["surname"], result["given_names"], result["passport_number"])
 ```
 
 ### Encoding MRZ
-
 ```python
 from MRTD import encode_mrz
 
-# Create travel document fields
 fields = {
-    'type': 'P',
-    'country': 'USA',
-    'name': 'SMITH<<JOHN',
-    'passport_number': '123456789',
-    'passport_check': '0',
-    'nationality': 'USA',
-    'birth_date': '900101',
-    'birth_check': '1',
-    'sex': 'M',
-    'expiration_date': '250501',
-    'expiration_check': '5',
-    'personal_number': '1234567890',
-    'final_check': '8'
+    "type": "P",
+    "country": "USA",
+    "name": "SMITH<<JOHN",
+    "passport_number": "123456789",
+    "passport_check": "0",
+    "nationality": "USA",
+    "birth_date": "900101",
+    "birth_check": "1",
+    "sex": "M",
+    "expiration_date": "250501",
+    "expiration_check": "5",
+    "personal_number": "12345678900000",
+    "final_check": "8",
 }
-
-# Encode to MRZ format
 line1, line2 = encode_mrz(fields)
-
-print(f"Line 1: {line1}")
-print(f"Line 2: {line2}")
+print(line1, len(line1))
+print(line2, len(line2))
 ```
 
-### Verhoeff Check Digit Validation
-
+### Verhoeff validation and mismatch reporting
 ```python
 from MRTD import verhoeff_check_digit, verify_field_with_verhoeff, report_check_digit_mismatches
 
-# Compute check digit
-check = verhoeff_check_digit("123456789")
-print(f"Check digit: {check}")
+digit = verhoeff_check_digit("123456789")
+ok = verify_field_with_verhoeff("123456789", str(digit))
 
-# Verify a field
-is_valid = verify_field_with_verhoeff("123456789", "0")
-print(f"Valid: {is_valid}")
-
-# Check all fields in decoded MRZ
 decoded = decode_mrz(line1, line2)
 mismatches = report_check_digit_mismatches(decoded)
-
-if mismatches:
-    print(f"Fields with incorrect check digits: {mismatches}")
-else:
-    print("All check digits are valid!")
 ```
 
 ---
 
-## Testing
+## Testing (without MutPy)
+- Run all tests:
+  - python -m unittest -v
+- Run a specific suite or test:
+  - python -m unittest MRTDtest.TestDecodeMRZ -v
+  - python -m unittest MRTDtest.TestEncodeMRZ.test_encode_mrz_basic -v
 
-The project includes comprehensive test coverage for all functions.
-
-### Run All Tests
-
-```bash
-python -m unittest MRTDtest.py -v
-```
-
-### Run Specific Test Class
-
-```bash
-python -m unittest MRTDtest.TestDecodeMRZ -v
-```
-
-### Test Categories
-
-- **TestScanMRZFromHardware**: Tests for hardware scanning stub
-- **TestDecodeMRZ**: Tests for MRZ decoding (10 test cases)
-- **TestEncodeMRZ**: Tests for MRZ encoding (3 test cases)
-- **TestVerhoeffCheckDigit**: Tests for check digit computation (4 test cases)
-- **TestVerifyFieldWithVerhoeff**: Tests for field verification (3 test cases)
-- **TestReportCheckDigitMismatches**: Tests for mismatch reporting (6 test cases)
-- **TestQueryTravelDocumentFromDB**: Tests for database query stub (2 test cases)
-
-**Total: 29 test cases**
+What’s covered:
+- Decoding: valid MRZs (USA, GBR, FRA), boundary lengths, names (single/multiple), gender, personal number normalization, exact 44-char and off-by-one errors.
+- Encoding: padding and truncation, name formatting, structure and length checks, empty personal number handling.
+- Verhoeff and verification helper: edge/pattern cases, correct/incorrect digits, types.
+- Mismatch reporting: each field wrong alone, multiple wrong, all wrong, order, and perfect case.
+- Stubs: hardware scan and DB return None (mockable).
 
 ---
 
-## Code Coverage
+## Code Coverage (without MutPy)
+- Generate coverage:
+  - coverage run -m unittest -v
+  - coverage report -m
+  - coverage html  (open htmlcov\index.html)
+- Target: >80% on MRTD.py.
 
-### Generate Coverage Report
+---
 
-```bash
-# Run tests with coverage
-coverage run -m unittest MRTDtest.py
-
-# View coverage report in terminal
-coverage report -m
-
-# Generate HTML coverage report
-coverage html
-```
-
-### View HTML Report
-
-Open `htmlcov/index.html` in your browser to see detailed coverage analysis.
-
-### Expected Coverage
-
-- **MRTD.py**: >80% coverage
-- **Statements**: High coverage of all executable lines
-- **Branches**: Complete coverage of conditional logic
-- **Functions**: All functions tested with multiple scenarios
+## Mutation Testing (with MutPy)
+- Run:
+  - mut.py --target MRTD --unit-test MRTDtest -m --report-html .mutpy-report
+- Capture in your report:
+  - Mutants generated
+  - Killed vs survived
+  - Mutation score (%)
+  - Additional tests added to kill survivors (see next section)
 
 ---
 
 ## Project Structure
-
-```
-Group_I_Verhoeff/
-│
-├── MRTD.py                 # Main implementation
-├── MRTDtest.py             # Test suite
-├── requirements.txt        # Python dependencies
-├── README.md               # This file
-├── 9303_p3_cons_en-1.pdf  # ICAO Doc 9303 specification
-│
-├── htmlcov/                # Coverage HTML reports
-│   ├── index.html
-│   ├── MRTD_py.html
-│   └── ...
-│
-└── __pycache__/            # Python cache files
-```
+- MRTD.py: Implementation (decode, encode, Verhoeff, mismatch report) + stubs.
+- MRTDtest.py: Unit tests (incl. additional tests to kill mutants).
+- docs/REPORT.md: Project report (export to PDF).
+- README.md: This file.
+- requirements.txt: Optional full dev stack (best on newer Python).
 
 ---
 
 ## Requirements
-
-- Python 3.9+
+- Python 3.7 (grading)
 - unittest (built-in)
-- coverage (for code coverage reports)
+- coverage==5.5 (grading)
+- MutPy==0.6.1 (grading)
 
-See [requirements.txt](requirements.txt) for complete dependency list.
-
----
-
-## API Reference
-
-### Functions
-
-#### `scan_mrz_from_hardware()`
-**Description:** Stub function for hardware MRZ scanning.  
-**Returns:** `None`  
-**Status:** Not implemented (stub)
-
-#### `decode_mrz(line1: str, line2: str) -> dict`
-**Description:** Decodes two 44-character MRZ lines into structured data.  
-**Parameters:**
-- `line1` (str): First line of MRZ (44 characters)
-- `line2` (str): Second line of MRZ (44 characters)
-
-**Returns:** Dictionary with decoded fields  
-**Raises:** `ValueError` if lines are not exactly 44 characters
-
-**Returned Fields:**
-- `document_type`, `issuing_country`, `surname`, `given_names`
-- `passport_number`, `passport_check_digit`, `nationality`
-- `birth_date`, `birth_check_digit`, `gender`
-- `expiration_date`, `expiration_check_digit`
-- `personal_number`, `personal_check_digit`, `final_check_digit`
-
-#### `encode_mrz(fields: dict) -> tuple[str, str]`
-**Description:** Encodes travel document fields into MRZ format.  
-**Parameters:**
-- `fields` (dict): Dictionary containing document fields
-
-**Returns:** Tuple of (line1, line2) as 44-character strings
-
-#### `verhoeff_check_digit(number: str) -> int`
-**Description:** Computes Verhoeff check digit for a numeric string.  
-**Parameters:**
-- `number` (str): Numeric string
-
-**Returns:** Check digit (0-9)
-
-#### `verify_field_with_verhoeff(field: str, check_digit: str) -> bool`
-**Description:** Verifies if a field matches its check digit.  
-**Parameters:**
-- `field` (str): Field value
-- `check_digit` (str): Expected check digit
-
-**Returns:** `True` if valid, `False` otherwise
-
-#### `report_check_digit_mismatches(decoded_fields: dict) -> list[str]`
-**Description:** Reports fields with incorrect check digits.  
-**Parameters:**
-- `decoded_fields` (dict): Decoded MRZ fields
-
-**Returns:** List of field names with mismatches
-
-#### `query_travel_document_from_db(document_id)`
-**Description:** Stub function for database queries.  
-**Returns:** `None`  
-**Status:** Not implemented (stub)
+If using the full stack on a newer Python, see requirements.txt.
 
 ---
 
-## Examples
+## API Reference (MRTD.py)
+- scan_mrz_from_hardware() -> None
+  - Stub; returns None (hardware not available).
+- decode_mrz(line1: str, line2: str) -> dict
+  - Validates both lines are exactly 44 chars; raises ValueError("LengthError") on failure.
+  - Line 1: document_type[0:2], issuing_country[2:5], names[5:44] (Surname<<Given<...).
+  - Line 2: passport_number[0:9], passport_check_digit[9], nationality[10:13],
+    birth_date[13:19], birth_check_digit[19], gender[20], expiration_date[21:27],
+    expiration_check_digit[27], personal_number[28:42], personal_check_digit[42], final_check_digit[43].
+  - Names: '<' replaced with spaces and collapsed.
+  - Personal number returned with filler '<' normalized to '0'.
+- encode_mrz(fields: dict) -> (str, str)
+  - Line 1: "P<" + country(3) + NAME (SURNAME<<GIVEN<...), spaces -> '<', pad/truncate to 44.
+  - Line 2: exact 44 chars = 9+1+3+6+1+1+6+1+14+1+1; pads/truncates each field; personal_number forced to 14 chars (pads with '<').
+- query_travel_document_from_db(document_id) -> None
+  - Stub; returns None (DB not available).
+- verhoeff_check_digit(number: str) -> int
+  - Standard Verhoeff algorithm using d/p/inv tables.
+- verify_field_with_verhoeff(field: str, check_digit: str) -> bool
+  - Computes and compares as strings.
+- report_check_digit_mismatches(decoded_fields: dict) -> list[str]
+  - Returns names of fields whose provided check digit mismatches computed (order: passport_number, birth_date, expiration_date, personal_number). Treats personal_number filler '<' as zeros for verification.
 
-### Example 1: Validate UK Passport
+---
 
-```python
-from MRTD import decode_mrz, report_check_digit_mismatches
+## About the Tests (MRTDtest.py)
+- TestScanMRZFromHardware: validates the stub returns None.
+- TestDecodeMRZ:
+  - Valid examples (USA, GBR, FRA).
+  - Names: single surname, multiple given names.
+  - Boundary: exactly 44 chars for each line; too short/too long variants.
+  - Gender extraction; personal number normalization and length 14.
+- TestEncodeMRZ:
+  - Basic build; padding and truncation; structure and formats; spaces replaced with '<'; empty personal number padded to 14.
+- TestVerhoeffCheckDigit:
+  - Simple, single-digit, zeros, long, known values, lengths, same-digit patterns, sequential and alternating patterns.
+- TestVerifyFieldWithVerhoeff:
+  - Correct/incorrect digits, zero checks, string comparison, boolean return type.
+- TestReportCheckDigitMismatches:
+  - No mismatches (all correct).
+  - Each individual mismatch.
+  - Multiple mismatches, all fields mismatch, expected order.
 
-line1 = "P<GBRJONES<<EMMA<CHARLOTTE<<<<<<<<<<<<<<<<"
-line2 = "9876543210GBR8512312F30123141122334455<<7"
+Run without MutPy:
+- python -m unittest -v
+- coverage run -m unittest -v
+- coverage report -m
+- coverage html
 
-decoded = decode_mrz(line1, line2)
-mismatches = report_check_digit_mismatches(decoded)
+---
 
-if not mismatches:
-    print("✓ Passport is valid")
-else:
-    print(f"✗ Invalid fields: {', '.join(mismatches)}")
-```
+## Additional Tests Added (MutPy-driven)
+Added to strengthen coverage and kill common mutants:
+- Decoding:
+  - test_decode_mrz_all_fields_extracted
+  - test_decode_mrz_exactly_44_chars_line1
+  - test_decode_mrz_exactly_44_chars_line2
+  - test_decode_mrz_line1_43_chars
+  - test_decode_mrz_line2_45_chars
+  - test_decode_mrz_gender_extraction
+  - test_decode_mrz_male_gender
+  - test_decode_mrz_personal_number_field
+- Encoding:
+  - test_encode_mrz_line1_format
+  - test_encode_mrz_line2_structure
+  - test_encode_mrz_space_replacement
+  - test_encode_mrz_truncation_at_44
+  - test_encode_mrz_empty_personal_number
 
-### Example 2: Handle Invalid MRZ Length
+Record updated coverage and mutation score in docs/REPORT.md.
 
-```python
-from MRTD import decode_mrz
+---
 
-line1 = "P<USASMITH<<JOHN"  # Too short
-line2 = "1234567890USA9001011M25050151234567890<<8"
+## How to Export the PDF Report
+- Create/update docs/REPORT.md with your coverage and mutation results.
+- VS Code method:
+  - Install “Markdown PDF”.
+  - Open docs/REPORT.md → “Markdown PDF: Export (pdf)”.
+- Pandoc (Windows):
+  - choco install pandoc
+  - pandoc docs\REPORT.md -o docs\REPORT.pdf
 
-try:
-    result = decode_mrz(line1, line2)
-except ValueError as e:
-    print(f"Error: {e}")  # Output: Error: LengthError
-```
+---
 
-### Example 3: Process Multiple Countries
-
-```python
-from MRTD import decode_mrz
-
-passports = [
-    ("USA", "P<USASMITH<<JOHN<JAMES<<<<<<<<<<<<<<<<<", "1234567890USA9001011M25050151234567890<<8"),
-    ("GBR", "P<GBRJONES<<EMMA<CHARLOTTE<<<<<<<<<<<<<<<<", "9876543210GBR8512312F30123141122334455<<7"),
-    ("FRA", "P<FRADUPONT<<MARIE<LOUISE<<<<<<<<<<<<<<<<<<<", "12FR1234567FRA7802285F27123011234567890<<3"),
-]
-
-for country, line1, line2 in passports:
-    result = decode_mrz(line1, line2)
-    print(f"{country}: {result['given_names']} {result['surname']}")
-```
+## Troubleshooting
+- ValueError("LengthError") in decode_mrz:
+  - Both MRZ lines must be exactly 44 chars.
+- encode_mrz line2 not 44 chars:
+  - Ensure personal_number is 14 chars; encoder pads with '<' if short.
+- Low coverage:
+  - Run coverage run -m unittest -v and verify boundary/error-path tests run.
+- MutPy not found:
+  - pip install MutPy==0.6.1 (on Python 3.7).
 
 ---
 
 ## Contributing
-
-Contributions are welcome! Please follow these guidelines:
-
-1. Fork the repository
-2. Create a feature branch (`git checkout -b feature/new-feature`)
-3. Write tests for new functionality
-4. Ensure >80% code coverage
-5. Follow PEP 8 style guidelines
-6. Submit a pull request
-
----
+- Fork, create a feature branch, add tests, ensure >80% coverage, follow PEP 8, then open a PR.
 
 ## License
-
-This project is developed for educational purposes as part of SSW567 coursework at Stevens Institute of Technology.
-
----
-
-## References
-
-- [ICAO Doc 9303](https://www.icao.int/publications/Documents/9303_p3_cons_en.pdf) - Machine Readable Travel Documents
-- [Verhoeff Algorithm](https://en.wikipedia.org/wiki/Verhoeff_algorithm) - Check digit algorithm
-
----
-
-## Contact
-
-For questions or issues, please contact:
-- Jack Galligan
-- Zhuo Zhang
-- Vanshaj Tyagi
-
-**Course:** SSW567 - Software Testing, Quality Assurance and Maintenance  
-**Institution:** Stevens Institute of Technology
+Educational use for SSW567 (Stevens Institute of Technology).
