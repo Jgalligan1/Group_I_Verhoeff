@@ -27,7 +27,7 @@ This finding is particularly significant for production deployment consideration
 
 ### Repository Information
 - **GitHub Repository:** [https://github.com/jgalligan1/Group_I_Verhoeff](https://github.com/jgalligan1/Group_I_Verhoeff)
-- **Branch:** `mrtdtesting`
+- **Branch:** `mrtdfinal`
 - **Primary Implementation Files:**
   - `MRTD.py` - Core MRZ encoding/decoding and Verhoeff check digit implementation
   - `MRTDtest.py` - Comprehensive unit test suite (58+ test cases)
