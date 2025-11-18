@@ -1,0 +1,53 @@
+import csv
+import matplotlib.pyplot as plt
+
+# Read the CSV file
+num_records = []
+time_without_tests = []
+time_with_tests = []
+
+with open('timing_results.csv', 'r') as csvfile:
+    reader = csv.DictReader(csvfile)
+    for row in reader:
+        num_records.append(int(float(row['Number of lines read from the beginning of the file'])))
+        time_without_tests.append(float(row['Execution time without tests (seconds)']))
+        time_with_tests.append(float(row['Execution time with unit tests (seconds)']))
+
+# Create the plot
+plt.figure(figsize=(10, 6))
+
+# Plot both curves
+plt.plot(num_records, 
+         time_without_tests, 
+         marker='o', 
+         label='Without Tests', 
+         linewidth=2,
+         color='#2E86AB')
+
+plt.plot(num_records, 
+         time_with_tests, 
+         marker='s', 
+         label='With Unit Tests', 
+         linewidth=2,
+         color='#A23B72')
+
+# Label the axes
+plt.xlabel('Number of Records Processed', fontsize=12, fontweight='bold')
+plt.ylabel('Execution Time (seconds)', fontsize=12, fontweight='bold')
+plt.title('MRTD Encoding/Decoding Performance: Impact of Unit Tests', fontsize=14, fontweight='bold')
+
+# Add grid for better readability
+plt.grid(True, alpha=0.3, linestyle='--')
+
+# Add legend
+plt.legend(fontsize=11, loc='upper left', framealpha=0.9)
+
+# Format the plot
+plt.tight_layout()
+
+# Save the plot
+plt.savefig('timing_plot.png', dpi=300, bbox_inches='tight')
+print("Plot saved as 'timing_plot.png'")
+
+# Display the plot
+plt.show()
